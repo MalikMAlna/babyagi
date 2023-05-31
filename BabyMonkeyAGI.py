@@ -262,8 +262,13 @@ class Thought:
         return self.score >= 0.8
 
 class ThoughtTree:
-    def __init__(self):
-        self.root = None
+    _instance = None
+
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance.root = None
+        return cls._instance
 
     def add_thought(self, task_name, parent=None):
         new_thought = Thought(task_name, parent)
@@ -349,6 +354,7 @@ def execution_agent(objective: str, task: str) -> str:
     prompt += f'\nYour task: {task}\nResponse:'
     return openai_call(prompt, max_tokens=2000)
 
+
 def evaluation_agent(objective: str, thought: Thought) -> bool:
     """
     Evaluate a task based on the given objective and previous context.
@@ -377,6 +383,7 @@ def evaluation_agent(objective: str, thought: Thought) -> bool:
     
     if thought.is_feasible():
         return True
+    return False
 
 
 # Get the top n completed tasks for the objective
@@ -445,7 +452,7 @@ def main ():
         if evaluation_agent(OBJECTIVE, current_thought) == False:
             break
         # Send to execution function to complete the task based on the context
-        result = execution_agent(OBJECTIVE, current_thought)
+        result = execution_agent(OBJECTIVE, current_thought.task_name)
         print("\033[93m\033[1m" + "\n*****TASK RESULT*****\n" + "\033[0m\033[0m")
         print(result)
         # Step 2: Enrich result and store in Pinecone
